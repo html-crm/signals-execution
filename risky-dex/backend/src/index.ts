@@ -55,8 +55,10 @@ app.use('/api/bots', botsRoutes);
 app.use(notFoundHandler);
 app.use(errorHandler);
 
-const server = app.listen(config.port, () => {
-  console.log(`🚀 RISKY-DEX Backend running on port ${config.port}`);
+const port = config.port || 3001;
+
+const server = app.listen(port, () => {
+  console.log(`🚀 RISKY-DEX Backend running on port ${port}`);
   console.log(`📊 Environment: ${config.env}`);
   console.log(`🔗 Frontend URL: ${config.frontendUrl}`);
 });

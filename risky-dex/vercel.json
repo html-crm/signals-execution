@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "framework": "vite",
+  "rootDirectory": "risky-dex",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://risky-dex-backend.up.railway.app/api/$1"
+    },
+    {
+      "source": "/ws/(.*)",
+      "destination": "wss://risky-dex-backend.up.railway.app/ws/$1"
+    }
+  ],
+  "env": {
+    "VITE_API_URL": "https://risky-dex-backend.up.railway.app",
+    "VITE_WS_URL": "wss://risky-dex-backend.up.railway.app"
+  }
+}

@@ -22,3 +22,21 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+backend/.env
+backend/.env.local
+backend/.env.production
+
+# Build outputs
+*.tsbuildinfo
+
+# Prisma
+backend/prisma/migrations/
+
+# IDE
+.vscode/settings.json
