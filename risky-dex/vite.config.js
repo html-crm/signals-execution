@@ -26,14 +26,10 @@ export default defineConfig({
     },
     build: {
         rollupOptions: {
-            external: ['react-is'],
+            external: [],
         },
     },
-    css: {
-        lightningcss: {
-            drafts: {
-                customMedia: true,
-            },
-        },
+    optimizeDeps: {
+        include: ['react-is', 'recharts'],
     },
 });
