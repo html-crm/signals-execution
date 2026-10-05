@@ -1,9 +1,7 @@
 import { Router, Request, Response } from 'express';
-import { authMiddleware, type AuthenticatedRequest } from '@middleware/auth';
-import { validateQuery } from '@middleware/validation';
-import { marketDataService } from '@services/marketData';
+import { validateQuery } from '../middleware/validation';
+import { marketDataService } from '../services/marketData';
 import { z } from 'zod';
-import type { ExchangeName, Timeframe } from '../types';
 
 const router = Router();
 
@@ -15,7 +13,7 @@ const tickerSchema = z.object({
 const candlesSchema = z.object({
   exchange: z.enum(['BINANCE', 'BYBIT', 'OKX', 'MEXC', 'BITGET', 'BINGX']),
   symbol: z.string(),
-  timeframe: z.enum(['M15', 'M30', 'H1', 'H4', 'D1', 'W1']),
+  timeframe: z.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']),
   limit: z.coerce.number().min(1).max(1000).default(500),
 });
 
@@ -28,11 +26,13 @@ const orderBookSchema = z.object({
 const marketDataSchema = z.object({
   exchange: z.enum(['BINANCE', 'BYBIT', 'OKX', 'MEXC', 'BITGET', 'BINGX']),
   symbol: z.string(),
-  timeframe: z.enum(['M15', 'M30', 'H1', 'H4', 'D1', 'W1']),
+  timeframe: z.enum(['1m', '5m', '15m', '30m', '1h', '4h', '1d', '1w']),
 });
 
+const router = Router();
+
 router.get('/ticker', validateQuery(tickerSchema), async (req: Request, res: Response) => {
-  const { exchange, symbol } = req.query as { exchange: ExchangeName; symbol: string };
+  const { exchange, symbol } = req.query as { exchange: string; symbol: string };
   
   try {
     const ticker = await marketDataService.getTicker(exchange, symbol);
@@ -46,7 +46,7 @@ router.get('/ticker', validateQuery(tickerSchema), async (req: Request, res: Res
 });
 
 router.get('/tickers', validateQuery(tickerSchema.omit({ symbol: true })), async (req: Request, res: Response) => {
-  const { exchange } = req.query as { exchange: ExchangeName };
+  const { exchange } = req.query as { exchange: string };
   
   try {
     const tickers = await marketDataService.getTickers(exchange);
@@ -61,9 +61,9 @@ router.get('/tickers', validateQuery(tickerSchema.omit({ symbol: true })), async
 
 router.get('/candles', validateQuery(candlesSchema), async (req: Request, res: Response) => {
   const { exchange, symbol, timeframe, limit } = req.query as {
-    exchange: ExchangeName;
+    exchange: string;
     symbol: string;
-    timeframe: Timeframe;
+    timeframe: string;
     limit: number;
   };
   
@@ -80,7 +80,7 @@ router.get('/candles', validateQuery(candlesSchema), async (req: Request, res: R
 
 router.get('/orderbook', validateQuery(orderBookSchema), async (req: Request, res: Response) => {
   const { exchange, symbol, limit } = req.query as {
-    exchange: ExchangeName;
+    exchange: string;
     symbol: string;
     limit: number;
   };
@@ -97,7 +97,7 @@ router.get('/orderbook', validateQuery(orderBookSchema), async (req: Request, re
 });
 
 router.get('/funding-rate', validateQuery(tickerSchema), async (req: Request, res: Response) => {
-  const { exchange, symbol } = req.query as { exchange: ExchangeName; symbol: string };
+  const { exchange, symbol } = req.query as { exchange: string; symbol: string };
   
   try {
     const fundingRate = await marketDataService.getFundingRate(exchange, symbol);
@@ -111,7 +111,7 @@ router.get('/funding-rate', validateQuery(tickerSchema), async (req: Request, re
 });
 
 router.get('/open-interest', validateQuery(tickerSchema), async (req: Request, res: Response) => {
-  const { exchange, symbol } = req.query as { exchange: ExchangeName; symbol: string };
+  const { exchange, symbol } = req.query as { exchange: string; symbol: string };
   
   try {
     const openInterest = await marketDataService.getOpenInterest(exchange, symbol);
@@ -126,9 +126,9 @@ router.get('/open-interest', validateQuery(tickerSchema), async (req: Request, r
 
 router.get('/market-data', validateQuery(marketDataSchema), async (req: Request, res: Response) => {
   const { exchange, symbol, timeframe } = req.query as {
-    exchange: ExchangeName;
+    exchange: string;
     symbol: string;
-    timeframe: Timeframe;
+    timeframe: string;
   };
   
   try {
@@ -142,7 +142,7 @@ router.get('/market-data', validateQuery(marketDataSchema), async (req: Request,
   }
 });
 
-router.get('/exchanges', (req: Request, res: Response) => {
+router.get('/exchanges', (req, res) => {
   const exchanges = [
     { id: 'BINANCE', name: 'Binance', hasWs: true },
     { id: 'BYBIT', name: 'Bybit', hasWs: true },
@@ -155,14 +155,16 @@ router.get('/exchanges', (req: Request, res: Response) => {
   res.json({ success: true, data: exchanges });
 });
 
-router.get('/timeframes', (req: Request, res: Response) => {
+router.get('/timeframes', (req, res) => {
   const timeframes = [
-    { id: 'M15', label: '15m' },
-    { id: 'M30', label: '30m' },
-    { id: 'H1', label: '1h' },
-    { id: 'H4', label: '4h' },
-    { id: 'D1', label: '1D' },
-    { id: 'W1', label: '1W' },
+    { id: '1m', label: '1m' },
+    { id: '5m', label: '5m' },
+    { id: '15m', label: '15m' },
+    { id: '30m', label: '30m' },
+    { id: '1h', label: '1h' },
+    { id: '4h', label: '4h' },
+    { id: '1d', label: '1D' },
+    { id: '1w', label: '1W' },
   ];
   
   res.json({ success: true, data: timeframes });

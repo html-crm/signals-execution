@@ -14,12 +14,12 @@ export class AppError extends Error {
   }
 }
 
-export function errorHandler(
+export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
   _next: NextFunction
-): void {
+): void => {
   console.error('Error:', err);
   
   if (err instanceof ZodError) {
@@ -78,9 +78,9 @@ export function errorHandler(
       message: process.env.NODE_ENV === 'development' ? err.message : 'An unexpected error occurred',
     },
   });
-}
+};
 
-export function notFoundHandler(req: Request, res: Response): void {
+export const notFoundHandler = (req: Request, res: Response): void => {
   res.status(404).json({
     success: false,
     error: {
@@ -88,4 +88,16 @@ export function notFoundHandler(req: Request, res: Response): void {
       message: `Route ${req.method} ${req.path} not found`,
     },
   });
+};
+
+export class AppError extends Error {
+  constructor(
+    public readonly code: string,
+    public readonly message: string,
+    public readonly statusCode: number = 500,
+    public readonly details?: unknown
+  ) {
+    super(message);
+    this.name = 'AppError';
+  }
 }

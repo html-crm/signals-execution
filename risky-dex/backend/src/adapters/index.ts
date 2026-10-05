@@ -1,4 +1,4 @@
-import type { ExchangeName, ExchangeCredentials } from '../types';
+import type { ExchangeName, ExchangeCredentials } from '@risky-dex/shared';
 import { BaseExchangeAdapter } from './base';
 import { BinanceAdapter } from './binance';
 import { BybitAdapter } from './bybit';

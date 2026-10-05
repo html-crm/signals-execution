@@ -1,16 +1,18 @@
 import crypto from 'crypto';
-import WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 import { BaseExchangeAdapter, type ExchangeCredentials } from './base';
-import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '../types';
+import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '@risky-dex/shared';
 import { config } from '../config';
 
 const TIMEFRAME_MAP: Record<Timeframe, string> = {
-  M15: '15m',
-  M30: '30m',
-  H1: '1h',
-  H4: '4h',
-  D1: '1d',
-  W1: '1w',
+  '1m': '1m',
+  '5m': '5m',
+  '15m': '15m',
+  '30m': '30m',
+  '1h': '1h',
+  '4h': '4h',
+  '1d': '1d',
+  '1w': '1w',
 };
 
 export class BinanceAdapter extends BaseExchangeAdapter {
@@ -41,14 +43,18 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   }
   
   denormalizeSymbol(symbol: string): string {
-    const base = symbol.slice(0, -4);
-    const quote = symbol.slice(-4);
-    return `${base}/${quote}`;
+    const quoteAssets = ['USDT', 'USDC', 'BTC', 'ETH', 'BNB'];
+    for (const quote of quoteAssets) {
+      if (symbol.endsWith(quote)) {
+        return `${symbol.slice(0, -quote.length)}/${quote}`;
+      }
+    }
+    return symbol;
   }
   
   async getServerTime(): Promise<number> {
     const response = await fetch(`${this.baseUrl}/api/v3/time`);
-    const data = await response.json() as { serverTime: number };
+    const data = await response.json();
     return data.serverTime;
   }
   
@@ -147,11 +153,11 @@ export class BinanceAdapter extends BaseExchangeAdapter {
     const data = await this.request<{ lastUpdateId: number; bids: string[][]; asks: string[][] }>(
       'GET',
       '/api/v3/depth',
-      { symbol: normalized, limit }
+      { symbol: this.normalizeSymbol(symbol), limit }
     );
     
     return {
-      symbol,
+      symbol: this.denormalizeSymbol(symbol),
       bids: data.bids.map((b: string[]) => [parseFloat(b[0]), parseFloat(b[1])]),
       asks: data.asks.map((a: string[]) => [parseFloat(a[0]), parseFloat(a[1])]),
       timestamp: Date.now(),
@@ -169,10 +175,10 @@ export class BinanceAdapter extends BaseExchangeAdapter {
       nextFundingTime: number;
       interestRate: string;
       time: number;
-    }>('GET', '/fapi/v1/premiumIndex', { symbol: normalized });
+    }>('GET', '/fapi/v1/premiumIndex', { symbol: this.normalizeSymbol(symbol) });
     
     return {
-      symbol,
+      symbol: this.denormalizeSymbol(symbol),
       rate: parseFloat(data.lastFundingRate),
       nextFundingTime: data.nextFundingTime,
       timestamp: data.time,
@@ -184,11 +190,11 @@ export class BinanceAdapter extends BaseExchangeAdapter {
     const data = await this.request<{ symbol: string; openInterest: string; time: number }>(
       'GET',
       '/fapi/v1/openInterest',
-      { symbol: normalized }
+      { symbol: this.normalizeSymbol(symbol) }
     );
     
     return {
-      symbol,
+      symbol: this.denormalizeSymbol(symbol),
       value: parseFloat(data.openInterest),
       timestamp: data.time,
     };
@@ -263,7 +269,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
       side: params.side,
       type: params.type,
       price: parseFloat(data.price || '0'),
-      amount: parseFloat(data.origQty),
+      amount: params.amount,
       filledAmount: parseFloat(data.executedQty),
       status: this.mapOrderStatus(data.status),
       fee: 0,
@@ -274,7 +280,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   
   async cancelOrder(orderId: string, symbol: string): Promise<void> {
     const normalized = this.normalizeSymbol(symbol);
-    await this.request('DELETE', '/fapi/v1/order', { symbol: normalized, orderId }, true);
+    await this.request('DELETE', '/fapi/v1/order', { symbol: this.normalizeSymbol(symbol), orderId }, true);
   }
   
   async cancelAllOrders(symbol?: string): Promise<void> {
@@ -287,12 +293,12 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   
   async getOrder(orderId: string, symbol: string): Promise<OrderResult> {
     const normalized = this.normalizeSymbol(symbol);
-    const data = await this.request<any>('GET', '/fapi/v1/order', { symbol: normalized, orderId }, true);
+    const data = await this.request<any>('GET', '/fapi/v1/order', { symbol: this.normalizeSymbol(symbol), orderId }, true);
     
     return {
       id: data.orderId.toString(),
       clientOrderId: data.clientOrderId,
-      symbol,
+      symbol: this.denormalizeSymbol(symbol),
       side: data.side,
       type: data.type,
       price: parseFloat(data.price),
@@ -361,7 +367,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
         currentPrice: parseFloat(p.markPrice),
         size: Math.abs(parseFloat(p.positionAmt)),
         value: Math.abs(parseFloat(p.notional)),
-        leverage: parseInt(p.leverage, 10),
+        leverage: parseInt(p.leverage),
         margin: parseFloat(p.isolatedMargin),
         unrealizedPnl: parseFloat(p.unRealizedProfit),
         realizedPnl: 0,
@@ -408,9 +414,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   
   subscribeTicker(symbol: string, callback: (ticker: Ticker) => void): () => void {
     const normalized = this.normalizeSymbol(symbol).toLowerCase();
-    const wsUrl = `${this.wsUrl}/${normalized}@ticker`;
-    
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`${this.wsUrl}/${normalized}@ticker`);
     this.wsConnections.set(`ticker-${symbol}`, ws);
     
     ws.on('message', (data: Buffer) => {
@@ -449,9 +453,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   subscribeCandles(symbol: string, timeframe: Timeframe, callback: (candle: Candle) => void): () => void {
     const normalized = this.normalizeSymbol(symbol).toLowerCase();
     const interval = TIMEFRAME_MAP[timeframe];
-    const wsUrl = `${this.wsUrl}/${normalized}@kline_${interval}`;
-    
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`${this.wsUrl}/${normalized}@kline_${interval}`);
     this.wsConnections.set(`candle-${symbol}-${timeframe}`, ws);
     
     ws.on('message', (data: Buffer) => {
@@ -483,9 +485,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   
   subscribeOrderBook(symbol: string, callback: (orderBook: OrderBook) => void): () => void {
     const normalized = this.normalizeSymbol(symbol).toLowerCase();
-    const wsUrl = `${this.wsUrl}/${normalized}@depth20@100ms`;
-    
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`${this.wsUrl}/${normalized}@depth20@100ms`);
     this.wsConnections.set(`orderbook-${symbol}`, ws);
     
     let lastUpdateId = 0;
@@ -515,9 +515,7 @@ export class BinanceAdapter extends BaseExchangeAdapter {
   
   subscribeTrades(symbol: string, callback: (trade: { price: number; amount: number; side: 'BUY' | 'SELL'; timestamp: number }) => void): () => void {
     const normalized = this.normalizeSymbol(symbol).toLowerCase();
-    const wsUrl = `${this.wsUrl}/${normalized}@trade`;
-    
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(`${this.wsUrl}/${normalized}@trade`);
     this.wsConnections.set(`trades-${symbol}`, ws);
     
     ws.on('message', (data: Buffer) => {

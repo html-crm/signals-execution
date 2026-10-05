@@ -1,21 +1,24 @@
 import { Request, Response, NextFunction } from 'express';
-import { verifyAccessToken, extractTokenFromHeader } from '@utils/jwt';
-import { prisma } from '@utils/prisma';
-import type { UserJwtPayload } from '../types';
+import jwt from 'jsonwebtoken';
+import { config } from '../config';
 
 export interface AuthenticatedRequest extends Request {
-  user?: UserJwtPayload;
+  user?: {
+    userId: string;
+    email: string;
+    role: string;
+  };
   userId?: string;
 }
 
-export async function authMiddleware(
+export const authMiddleware = async (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-): Promise<void> {
-  const token = extractTokenFromHeader(req.headers.authorization);
+): Promise<void> => {
+  const authHeader = req.headers.authorization;
   
-  if (!token) {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({
       success: false,
       error: { code: 'UNAUTHORIZED', message: 'No token provided' },
@@ -23,35 +26,57 @@ export async function authMiddleware(
     return;
   }
   
-  const payload = verifyAccessToken(token);
+  const token = authHeader.slice(7);
   
-  if (!payload) {
+  try {
+    const payload = jwt.verify(token, config.jwt.secret) as {
+      userId: string;
+      email: string;
+      role: string;
+    };
+    
+    req.user = payload;
+    req.userId = payload.userId;
+    next();
+  } catch {
     res.status(401).json({
       success: false,
       error: { code: 'INVALID_TOKEN', message: 'Invalid or expired token' },
     });
-    return;
   }
-  
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: { id: true, isActive: true, role: true },
-  });
-  
-  if (!user || !user.isActive) {
-    res.status(401).json({
-      success: false,
-      error: { code: 'USER_NOT_FOUND', message: 'User not found or inactive' },
-    });
-    return;
-  }
-  
-  req.user = payload;
-  req.userId = payload.userId;
-  next();
-}
+};
 
-export function requireRole(...roles: string[]) {
+export const optionalAuth = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  const authHeader = req.headers.authorization;
+  
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    next();
+    return;
+  }
+  
+  const token = authHeader.slice(7);
+  
+  try {
+    const payload = jwt.verify(token, config.jwt.secret) as {
+      userId: string;
+      email: string;
+      role: string;
+    };
+    
+    req.user = payload;
+    req.userId = payload.userId;
+  } catch {
+    // Ignore invalid token for optional auth
+  }
+  
+  next();
+};
+
+export const requireRole = (...roles: string[]) => {
   return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     if (!req.user || !roles.includes(req.user.role)) {
       res.status(403).json({
@@ -62,21 +87,4 @@ export function requireRole(...roles: string[]) {
     }
     next();
   };
-}
-
-export function optionalAuth(
-  req: AuthenticatedRequest,
-  res: Response,
-  next: NextFunction
-): void {
-  const token = extractTokenFromHeader(req.headers.authorization);
-  
-  if (token) {
-    const payload = verifyAccessToken(token);
-    if (payload) {
-      req.user = payload;
-      req.userId = payload.userId;
-    }
-  }
-  next();
-}
+};

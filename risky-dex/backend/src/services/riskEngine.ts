@@ -1,4 +1,4 @@
-import type { RiskCalculation, OrderParams, PositionInfo, OrderType, OrderSide, Timeframe } from '../types';
+import type { RiskCalculation, OrderParams, PositionInfo, OrderType, OrderSide, Timeframe } from '@risky-dex/shared';
 
 interface RiskSettings {
   maxTradeSize: number;

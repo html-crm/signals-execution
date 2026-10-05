@@ -1,16 +1,18 @@
 import crypto from 'crypto';
-import WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 import { BaseExchangeAdapter, type ExchangeCredentials } from './base';
-import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '../types';
+import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '@risky-dex/shared';
 import { config } from '../config';
 
 const TIMEFRAME_MAP: Record<Timeframe, string> = {
-  M15: 'Min15',
-  M30: 'Min30',
-  H1: 'Min60',
-  H4: 'Hour4',
-  D1: 'Day1',
-  W1: 'Week1',
+  '1m': 'Min15',
+  '5m': 'Min30',
+  '15m': 'Min15',
+  '30m': 'Min30',
+  '1h': 'Min60',
+  '4h': 'Hour4',
+  '1d': 'Day1',
+  '1w': 'Week1',
 };
 
 export class MEXCAdapter extends BaseExchangeAdapter {
@@ -46,7 +48,7 @@ export class MEXCAdapter extends BaseExchangeAdapter {
   
   async getServerTime(): Promise<number> {
     const response = await fetch(`${this.baseUrl}/api/v3/time`);
-    const data = await response.json() as { serverTime: number };
+    const data = await response.json();
     return data.serverTime;
   }
   
@@ -105,7 +107,7 @@ export class MEXCAdapter extends BaseExchangeAdapter {
         bidSize: bt ? parseFloat(bt.bidQty) : 0,
         askSize: bt ? parseFloat(bt.askQty) : 0,
         timestamp: Date.now(),
-      };
+      });
     });
   }
   

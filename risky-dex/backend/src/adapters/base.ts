@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 import type {
   ExchangeName,
   Ticker,
@@ -11,7 +11,14 @@ import type {
   FundingRate,
   OpenInterest,
   Timeframe,
-} from '../types';
+} from '@risky-dex/shared';
+
+export interface ExchangeCredentials {
+  apiKey: string;
+  apiSecret: string;
+  passphrase?: string;
+  testnet?: boolean;
+}
 
 export interface ExchangeAdapter {
   readonly name: ExchangeName;
@@ -120,8 +127,7 @@ export abstract class BaseExchangeAdapter implements ExchangeAdapter {
       throw new Error(`${this.name} API Error: ${response.status} - ${error}`);
     }
     
-    const data = await response.json();
-    return data as T;
+    return response.json();
   }
   
   abstract getTicker(symbol: string): Promise<Ticker>;

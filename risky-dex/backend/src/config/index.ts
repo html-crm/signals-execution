@@ -4,33 +4,40 @@ dotenv.config();
 export const config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3001', 10),
-  frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   
   jwt: {
-    secret: process.env.JWT_SECRET || 'dev-secret-change-me',
+    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-change-me',
+    refreshSecret: process.env.JWT_REFRESH_SECRET || 'your-refresh-secret-change-in-production',
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
   },
   
   encryption: {
-    key: process.env.ENCRYPTION_KEY || 'dev-encryption-key-32-chars-long!!',
-  },
-  
-  rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+    key: process.env.ENCRYPTION_KEY || 'your-32-char-encryption-key-here!!',
   },
   
   database: {
     url: process.env.DATABASE_URL || '',
   },
   
+  redis: {
+    url: process.env.REDIS_URL || 'redis://localhost:6379',
+  },
+  
+  cors: {
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true,
+  },
+  
+  rateLimit: {
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    maxRequests: 100,
+  },
+  
   exchanges: {
     binance: {
       apiKey: process.env.BINANCE_API_KEY || '',
       apiSecret: process.env.BINANCE_API_SECRET || '',
-      passphrase: '',
       baseUrl: 'https://api.binance.com',
       wsUrl: 'wss://stream.binance.com:9443/ws',
       testnetBaseUrl: 'https://testnet.binance.vision',
@@ -39,7 +46,6 @@ export const config = {
     bybit: {
       apiKey: process.env.BYBIT_API_KEY || '',
       apiSecret: process.env.BYBIT_API_SECRET || '',
-      passphrase: '',
       baseUrl: 'https://api.bybit.com',
       wsUrl: 'wss://stream.bybit.com/v5/public/linear',
       testnetBaseUrl: 'https://api-testnet.bybit.com',
@@ -51,13 +57,10 @@ export const config = {
       passphrase: process.env.OKX_PASSPHRASE || '',
       baseUrl: 'https://www.okx.com',
       wsUrl: 'wss://ws.okx.com:8443/api/v5/market',
-      testnetBaseUrl: 'https://www.okx.com',
-      testnetWsUrl: 'wss://ws.okx.com:8443/api/v5/market',
     },
     mexc: {
       apiKey: process.env.MEXC_API_KEY || '',
       apiSecret: process.env.MEXC_API_SECRET || '',
-      passphrase: '',
       baseUrl: 'https://api.mexc.com',
       wsUrl: 'wss://wbs.mexc.com/ws',
     },
@@ -71,7 +74,6 @@ export const config = {
     bingx: {
       apiKey: process.env.BINGX_API_KEY || '',
       apiSecret: process.env.BINGX_API_SECRET || '',
-      passphrase: '',
       baseUrl: 'https://open-api.bingx.com',
       wsUrl: 'wss://open-api.bingx.com/market/ws',
     },
@@ -88,10 +90,6 @@ export const config = {
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
     from: process.env.EMAIL_FROM || '',
-  },
-  
-  redis: {
-    url: process.env.REDIS_URL || '',
   },
 } as const;
 

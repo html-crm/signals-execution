@@ -1,9 +1,9 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
+import { authMiddleware, AuthenticatedRequest } from '../middleware/auth';
+import { validateBody } from '../middleware/validation';
+import { prisma } from '../utils/prisma';
+import { generateTokenPair } from '../utils/jwt';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@utils/prisma';
-import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '@utils/jwt';
-import { authMiddleware, type AuthenticatedRequest } from '@middleware/auth';
-import { validateBody } from '@middleware/validation';
 import { z } from 'zod';
 
 const router = Router();
@@ -19,7 +19,7 @@ const loginSchema = z.object({
   password: z.string(),
 });
 
-router.post('/register', validateBody(registerSchema), async (req: Request, res: Response) => {
+router.post('/register', validateBody(registerSchema), async (req, res) => {
   const { email, password, name } = req.body;
   
   const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -36,14 +36,9 @@ router.post('/register', validateBody(registerSchema), async (req: Request, res:
     data: { email, passwordHash, name },
   });
   
-  await prisma.userSettings.create({
-    data: { userId: user.id },
-  });
+  const { accessToken, refreshToken } = generateTokenPair(user);
   
-  const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });
-  const refreshToken = generateRefreshToken({ userId: user.id, email: user.email, role: user.role });
-  
-  res.json({
+  res.status(201).json({
     success: true,
     data: {
       user: { id: user.id, email: user.email, name: user.name, role: user.role },
@@ -53,11 +48,11 @@ router.post('/register', validateBody(registerSchema), async (req: Request, res:
   });
 });
 
-router.post('/login', validateBody(loginSchema), async (req: Request, res: Response) => {
+router.post('/login', validateBody(loginSchema), async (req, res) => {
   const { email, password } = req.body;
   
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.isActive) {
+  if (!user) {
     return res.status(401).json({
       success: false,
       error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
@@ -72,13 +67,19 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
     });
   }
   
+  if (!user.isActive) {
+    return res.status(403).json({
+      success: false,
+      error: { code: 'ACCOUNT_INACTIVE', message: 'Account is deactivated' },
+    });
+  }
+  
   await prisma.user.update({
     where: { id: user.id },
     data: { lastLoginAt: new Date() },
   });
   
-  const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });
-  const refreshToken = generateRefreshToken({ userId: user.id, email: user.email, role: user.role });
+  const { accessToken, refreshToken } = generateTokenPair(user);
   
   res.json({
     success: true,
@@ -90,7 +91,7 @@ router.post('/login', validateBody(loginSchema), async (req: Request, res: Respo
   });
 });
 
-router.post('/refresh', async (req: Request, res: Response) => {
+router.post('/refresh', async (req, res) => {
   const { refreshToken } = req.body;
   
   if (!refreshToken) {
@@ -100,7 +101,7 @@ router.post('/refresh', async (req: Request, res: Response) => {
     });
   }
   
-  const payload = verifyRefreshToken(refreshToken);
+  const payload = require('../utils/jwt').verifyRefreshToken(refreshToken);
   if (!payload) {
     return res.status(401).json({
       success: false,
@@ -116,23 +117,36 @@ router.post('/refresh', async (req: Request, res: Response) => {
     });
   }
   
-  const accessToken = generateAccessToken({ userId: user.id, email: user.email, role: user.role });
-  const newRefreshToken = generateRefreshToken({ userId: user.id, email: user.email, role: user.role });
-  
-  res.json({ success: true, data: { accessToken, refreshToken: newRefreshToken } });
+  const tokens = require('../utils/jwt').generateTokenPair(payload);
+  res.json({ success: true, data: tokens });
 });
 
-router.get('/me', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
-  const user = await prisma.user.findUnique({
-    where: { id: req.userId! },
-    select: { id: true, email: true, name: true, role: true, createdAt: true, lastLoginAt: true },
-  });
-  
-  res.json({ success: true, data: user });
-});
-
-router.post('/logout', authMiddleware, async (req: AuthenticatedRequest, res: Response) => {
+router.post('/logout', async (req, res) => {
   res.json({ success: true, message: 'Logged out successfully' });
+});
+
+router.get('/me', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  
+  if (!token) {
+    return res.status(401).json({ success: false, error: { code: 'UNAUTHORIZED', message: 'No token provided' } });
+  }
+  
+  const payload = require('../utils/jwt').verifyAccessToken(token);
+  if (!payload) {
+    return res.status(401).json({ success: false, error: { code: 'INVALID_TOKEN', message: 'Invalid token' } });
+  }
+  
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+  if (!user) {
+    return res.status(404).json({ success: false, error: { code: 'USER_NOT_FOUND', message: 'User not found' } });
+  }
+  
+  res.json({
+    success: true,
+    data: { id: user.id, email: user.email, name: user.name, role: user.role },
+  });
 });
 
 export default router;

@@ -1,16 +1,18 @@
 import crypto from 'crypto';
-import WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 import { BaseExchangeAdapter, type ExchangeCredentials } from './base';
-import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '../types';
+import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '@risky-dex/shared';
 import { config } from '../config';
 
 const TIMEFRAME_MAP: Record<Timeframe, string> = {
-  M15: '15',
-  M30: '30',
-  H1: '60',
-  H4: '240',
-  D1: 'D',
-  W1: 'W',
+  '1m': '1',
+  '5m': '5',
+  '15m': '15',
+  '30m': '30',
+  '1h': '60',
+  '4h': '240',
+  '1d': 'D',
+  '1w': 'W',
 };
 
 export class BybitAdapter extends BaseExchangeAdapter {
@@ -58,7 +60,7 @@ export class BybitAdapter extends BaseExchangeAdapter {
   
   async getServerTime(): Promise<number> {
     const response = await fetch(`${this.baseUrl}/v5/market/time`);
-    const data = await response.json() as { result: { timeSecond: string } };
+    const data = await response.json();
     return parseInt(data.result.timeSecond, 10) * 1000;
   }
   
@@ -379,7 +381,7 @@ export class BybitAdapter extends BaseExchangeAdapter {
         currentPrice: parseFloat(p.markPrice),
         size: parseFloat(p.size),
         value: parseFloat(p.positionValue),
-        leverage: parseInt(p.leverage, 10),
+        leverage: parseInt(p.leverage),
         margin: parseFloat(p.positionIM),
         unrealizedPnl: parseFloat(p.unrealisedPnl),
         realizedPnl: parseFloat(p.cumRealisedPnl),

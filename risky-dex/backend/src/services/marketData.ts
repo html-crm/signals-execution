@@ -1,7 +1,7 @@
-import { prisma } from '@utils/prisma';
+import { PrismaClient } from '@prisma/client';
 import { createExchangeAdapter, type BaseExchangeAdapter } from '@adapters/index';
-import type { ExchangeName, Ticker, Candle, OrderBook, Timeframe, FundingRate, OpenInterest } from '../types';
-import { config } from '../config';
+import type { ExchangeName, Ticker, Candle, OrderBook, Timeframe, FundingRate, OpenInterest } from '@risky-dex/shared';
+import { config } from '@config/index';
 
 interface MarketDataCache {
   tickers: Map<string, { data: Ticker; timestamp: number }>;
@@ -239,6 +239,9 @@ export class MarketDataService {
   }
   
   async storeCandlesToDb(exchange: ExchangeName, symbol: string, timeframe: Timeframe, candles: Candle[]): Promise<void> {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
     await prisma.marketData.createMany({
       data: candles.map(c => ({
         exchange,
@@ -260,15 +263,15 @@ export class MarketDataService {
   }
   
   async getStoredCandles(exchange: ExchangeName, symbol: string, timeframe: Timeframe, startTime: Date, endTime: Date): Promise<Candle[]> {
+    const { PrismaClient } = await import('@prisma/client');
+    const prisma = new PrismaClient();
+    
     const data = await prisma.marketData.findMany({
       where: {
         exchange,
         symbol,
         timeframe,
-        timestamp: {
-          gte: startTime,
-          lte: endTime,
-        },
+        timestamp: { gte: startTime, lte: endTime },
       },
       orderBy: { timestamp: 'asc' },
     });
@@ -286,4 +289,4 @@ export class MarketDataService {
   }
 }
 
-export const marketDataService = new MarketDataService();
+export const marketDataService = new MarketDataService(new PrismaClient());

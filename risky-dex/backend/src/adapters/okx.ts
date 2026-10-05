@@ -1,16 +1,18 @@
 import crypto from 'crypto';
-import WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 import { BaseExchangeAdapter, type ExchangeCredentials } from './base';
-import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '../types';
+import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '@risky-dex/shared';
 import { config } from '../config';
 
 const TIMEFRAME_MAP: Record<Timeframe, string> = {
-  M15: '15m',
-  M30: '30m',
-  H1: '1H',
-  H4: '4H',
-  D1: '1D',
-  W1: '1W',
+  '1m': '15m',
+  '5m': '30m',
+  '15m': '15m',
+  '30m': '30m',
+  '1h': '1H',
+  '4h': '4H',
+  '1d': '1D',
+  '1w': '1W',
 };
 
 export class OKXAdapter extends BaseExchangeAdapter {
@@ -55,7 +57,7 @@ export class OKXAdapter extends BaseExchangeAdapter {
   
   async getServerTime(): Promise<number> {
     const response = await fetch(`${this.baseUrl}/api/v5/public/time`);
-    const data = await response.json() as { data: Array<{ ts: string }> };
+    const data = await response.json();
     return parseInt(data.data[0].ts);
   }
   
@@ -182,7 +184,6 @@ export class OKXAdapter extends BaseExchangeAdapter {
   }
   
   async getBalances(): Promise<Balance[]> {
-    // Requires signed request - implement when needed
     return [];
   }
   

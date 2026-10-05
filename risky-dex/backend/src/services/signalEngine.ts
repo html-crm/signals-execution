@@ -7,7 +7,7 @@ import type {
   ExchangeName,
   SignalDirection,
   SignalStrength,
-} from '../types';
+} from '@risky-dex/shared';
 import { marketDataService } from './marketData';
 import {
   calculateRSI,
@@ -170,7 +170,7 @@ export class SignalEngine {
   
   private calculateScores(params: {
     indicators: IndicatorValues;
-    volumeAnalysis: VolumeAnalysis;
+    volumeAnalysis: any;
     ticker: any;
     fundingRate?: any;
     openInterest?: any;
@@ -316,7 +316,7 @@ export class SignalEngine {
     return { entryPrice, entryZoneLow, entryZoneHigh, stopLoss, takeProfit1, takeProfit2, riskReward, invalidationLevel };
   }
   
-  private generateReasons(scores: ScoreBreakdown, indicators: IndicatorValues, volumeAnalysis: VolumeAnalysis, direction: SignalDirection): string[] {
+  private generateReasons(scores: ScoreBreakdown, indicators: IndicatorValues, volumeAnalysis: any, direction: SignalDirection): string[] {
     const reasons: string[] = [];
     const isLong = direction === 'LONG' || direction === 'BUY';
     
@@ -346,14 +346,14 @@ export class SignalEngine {
       reasons.push('RSI is in healthy range');
     }
     
-    if (indicators.bollingerBands.position < 30 && isLong) {
+    if (indicators.bollingerBands.position < 30 && !isLong) {
       reasons.push('Price near lower Bollinger Band');
     }
     
     return reasons;
   }
   
-  private generateWarnings(scores: ScoreBreakdown, indicators: IndicatorValues, volumeAnalysis: VolumeAnalysis): string[] {
+  private generateWarnings(scores: ScoreBreakdown, indicators: IndicatorValues, volumeAnalysis: any): string[] {
     const warnings: string[] = [];
     
     if (volumeAnalysis.volumeRatio < 0.8) {

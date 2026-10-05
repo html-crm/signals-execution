@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
@@ -11,7 +10,6 @@ datasource db {
 enum UserRole {
   ADMIN
   USER
-  VIEWER
 }
 
 enum ExchangeName {
@@ -21,32 +19,6 @@ enum ExchangeName {
   MEXC
   BITGET
   BINGX
-}
-
-enum BotStatus {
-  STOPPED
-  STARTING
-  RUNNING
-  PAUSED
-  WAITING
-  ANALYZING
-  BUY_SIGNAL
-  BUYING
-  POSITION_OPEN
-  SELL_SIGNAL
-  SELLING
-  ERROR
-  RISK_LOCKED
-  MANUAL_CONTROL
-}
-
-enum BotStrategy {
-  MOMENTUM
-  MEAN_REVERSION
-  GRID
-  DCA
-  BREAKOUT
-  CUSTOM
 }
 
 enum OrderSide {
@@ -66,7 +38,7 @@ enum OrderStatus {
   FILLED
   PARTIALLY_FILLED
   CANCELLED
-  FAILED
+  REJECTED
   PENDING
 }
 
@@ -81,12 +53,23 @@ enum PositionStatus {
   CLOSED
 }
 
+enum TradeMode {
+  PAPER
+  LIVE
+}
+
+enum BotStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  STOPPED
+}
+
 enum SignalDirection {
   BUY
   SELL
   LONG
   SHORT
-  HOLD
 }
 
 enum SignalStrength {
@@ -94,217 +77,43 @@ enum SignalStrength {
   NEUTRAL
   STRONG
   VERY_STRONG
-  EXTREMELY_STRONG
-}
-
-enum TradeMode {
-  PAPER
-  LIVE
-}
-
-enum Timeframe {
-  M15
-  M30
-  H1
-  H4
-  D1
-  W1
-}
-
-enum NewsSourceType {
-  RSS
-  API
-  TWITTER
-  TELEGRAM
-  DISCORD
-  REDDIT
-  YOUTUBE
-  OFFICIAL_BLOG
-  EXCHANGE_ANNOUNCEMENT
-  REGULATORY_FILING
-  WHALE_ALERT
-  ON_CHAIN
-  MANUAL
-}
-
-enum NewsCategory {
-  REGULATORY
-  ETF
-  EXCHANGE_LISTING
-  EXCHANGE_DELISTING
-  PARTNERSHIP
-  PROTOCOL_UPGRADE
-  TOKEN_UNLOCK
-  HACK_EXPLOIT
-  SECURITY_INCIDENT
-  WHALE_ACTIVITY
-  MACRO_ECONOMIC
-  FED_DECISION
-  CPI_DATA
-  EMPLOYMENT_DATA
-  EARNINGS
-  CORPORATE_ADOPTION
-  GOVERNANCE
-  AIRDROP
-  BURN
-  STAKING
-  DEFI_LAUNCH
-  NFT
-  MEME_COIN
-  LAYER2
-  INFRASTRUCTURE
-  OTHER
-}
-
-enum NewsSentiment {
-  VERY_BEARISH
-  BEARISH
-  NEUTRAL
-  BULLISH
-  VERY_BULLISH
-}
-
-enum NewsImpactLevel {
-  NEGLIGIBLE
-  LOW
-  MEDIUM
-  HIGH
-  CRITICAL
-}
-
-enum NewsEventStatus {
-  BREAKING
-  ACTIVE
-  FADING
-  RESOLVED
-  ARCHIVED
-}
-
-enum TradeGateDecision {
-  APPROVED
-  BLOCKED
-  WARNING
-  WAIT_FOR_CONFIRMATION
-}
-
-enum TradeGateCheckStatus {
-  PASS
-  FAIL
-  WARNING
-  SKIPPED
-}
-
-enum MacroEventType {
-  FOMC_MEETING
-  FOMC_MINUTES
-  CPI_RELEASE
-  PPI_RELEASE
-  EMPLOYMENT_REPORT
-  GDP_RELEASE
-  FED_SPEECH
-  ECB_DECISION
-  BOE_DECISION
-  BOJ_DECISION
-  ETF_DECISION
-  REGULATORY_ANNOUNCEMENT
-  GOVERNMENT_POLICY
-  GEOPOLITICAL
-  CRYPTO_SPECIFIC
-}
-
-enum SocialSourceType {
-  TWITTER
-  TELEGRAM
-  DISCORD
-  REDDIT
-  YOUTUBE
-  LINKEDIN
-  MEDIUM
-  SUBSTACK
-  TRADINGVIEW
-}
-
-enum NewsTimelineEventType {
-  SIGNAL_GENERATED
-  NEWS_DETECTED
-  NEWS_CONFIRMED
-  VOLUME_CONFIRMATION
-  TRADE_OPENED
-  SOCIAL_MENTION
-  OI_CHANGE
-  MACRO_EVENT
-  RISK_CHANGE
-  PRICE_MOVEMENT
-  TRADE_CLOSED
-  NEWS_CONTRADICTION
-  NEWS_CONFIRMATION
 }
 
 model User {
-  id            String       @id @default(cuid())
-  email         String       @unique
+  id            String    @id @default(cuid())
+  email         String    @unique
   passwordHash  String
   name          String?
-  role          UserRole     @default(USER)
-  isActive      Boolean      @default(true)
-  emailVerified Boolean      @default(false)
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  lastLoginAt   DateTime?
+  role          UserRole  @default(USER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   exchangeAccounts ExchangeAccount[]
   bots            Bot[]
   trades          Trade[]
   orders          Order[]
   positions       Position[]
-  settings        UserSettings?
-  notifications   Notification[]
   apiKeys         ApiKey[]
-  backtestResults BacktestResult[]
-  followedPeople  FollowedPerson[]
-  tradeGateWeights TradeGateWeights?
-
-  @@index([email])
-  @@index([role])
-}
-
-model UserSettings {
-  id                 String   @id @default(cuid())
-  userId             String   @unique
-  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  theme              String   @default("dark")
-  language           String   @default("en")
-  timezone           String   @default("UTC")
-  notificationsEmail Boolean  @default(true)
-  notificationsTelegram Boolean @default(false)
-  telegramChatId     String?
-  riskDefaultMaxPositionSize Float @default(1000)
-  riskDefaultMaxDailyLoss Float @default(200)
-  riskDefaultMaxOpenPositions Int @default(5)
-  riskDefaultStopLossPercent Float @default(2.0)
-  riskDefaultTakeProfitPercent Float @default(4.0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  settings        UserSettings?
 }
 
 model ApiKey {
-  id           String       @id @default(cuid())
-  userId       String
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  exchange     ExchangeName
-  apiKeyEncrypted String
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name              String
+  exchange          ExchangeName
+  apiKeyEncrypted   String
   apiSecretEncrypted String
-  apiPassphraseEncrypted String?
-  permissions  String       @default("read,trade")
-  isActive     Boolean      @default(true)
-  lastUsedAt   DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  exchangeAccounts ExchangeAccount[]
+  passphraseEncrypted String?
+  permissions       String       @default("read,trade")
+  isActive          Boolean      @default(true)
+  lastUsedAt        DateTime?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
 
-  @@index([userId])
-  @@index([exchange])
+  exchangeAccounts ExchangeAccount[]
 }
 
 model ExchangeAccount {
@@ -323,7 +132,6 @@ model ExchangeAccount {
   orders          Order[]
   trades          Trade[]
   bots            Bot[]
-  signals         Signal[]
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
@@ -333,53 +141,52 @@ model ExchangeAccount {
 }
 
 model AccountBalance {
-  id                 String            @id @default(cuid())
-  exchangeAccountId  String
-  exchangeAccount    ExchangeAccount   @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
-  asset              String
-  free               Decimal           @db.Decimal(30, 10)
-  locked             Decimal           @db.Decimal(30, 10)
-  total              Decimal           @db.Decimal(30, 10)
-  usdValue           Decimal           @db.Decimal(30, 10)
-  updatedAt          DateTime          @updatedAt
+  id                String            @id @default(cuid())
+  exchangeAccountId String
+  exchangeAccount   ExchangeAccount   @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
+  asset             String
+  free              Decimal           @db.Decimal(30, 10)
+  locked            Decimal           @db.Decimal(30, 10)
+  total             Decimal           @db.Decimal(30, 10)
+  usdValue          Decimal           @db.Decimal(30, 10)
+  updatedAt         DateTime          @updatedAt
 
   @@unique([exchangeAccountId, asset])
   @@index([exchangeAccountId])
 }
 
 model Bot {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String     @id @default(cuid())
+  userId            String
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   exchangeAccountId String
-  exchangeAccount ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
-  name            String
-  status          BotStatus    @default(STOPPED)
-  strategy        BotStrategy
-  symbol          String
-  baseAsset       String
-  quoteAsset      String
-  timeframe       Timeframe    @default(H1)
-  tradeMode       TradeMode    @default(PAPER)
-  leverage        Int          @default(1)
-  isActive        Boolean      @default(true)
-  
-  config          Json
-  riskSettings    Json
-  performance     Json
-  
-  startedAt       DateTime?
-  stoppedAt       DateTime?
-  lastSignalAt    DateTime?
-  lastTradeAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  exchangeAccount   ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
+  name              String
+  status            BotStatus  @default(INACTIVE)
+  exchange          ExchangeName
+  symbol            String
+  timeframe         String
+  strategy          String
+  riskPerTrade      Float
+  maxPositionSize   Float
+  maxDailyLoss      Float
+  maxOpenPositions  Int
+  stopLossATR       Float
+  takeProfitATR     Float
+  mode              TradeMode  @default(PAPER)
+  leverage          Int        @default(1)
+  config            Json
+  performance       Json
+  isActive          Boolean    @default(true)
+  lastSignalAt      DateTime?
+  lastTradeAt       DateTime?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   trades          Trade[]
   orders          Order[]
   positions       Position[]
   signals         Signal[]
-  backtestResults BacktestResult[]
 
   @@index([userId])
   @@index([exchangeAccountId])
@@ -388,37 +195,37 @@ model Bot {
 }
 
 model Trade {
-  id              String       @id @default(cuid())
-  userId          String
-  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botId           String?
-  bot             Bot?         @relation(fields: [botId], references: [id], onDelete: SetNull)
+  id                String       @id @default(cuid())
+  userId            String
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  botId             String?
+  bot               Bot?         @relation(fields: [botId], references: [id], onDelete: SetNull)
   exchangeAccountId String
-  exchangeAccount ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
-  orderId         String?
-  order           Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
-  positionId      String?
-  position        Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
+  exchangeAccount   ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
+  orderId           String?
+  order             Order?       @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  positionId        String?
+  position          Position?    @relation(fields: [positionId], references: [id], onDelete: SetNull)
   
-  symbol          String
-  baseAsset       String
-  quoteAsset      String
-  side            OrderSide
-  type            OrderType
-  price           Decimal      @db.Decimal(30, 10)
-  amount          Decimal      @db.Decimal(30, 10)
-  value           Decimal      @db.Decimal(30, 10)
-  fee             Decimal      @db.Decimal(30, 10)
-  feeAsset        String
-  pnl             Decimal?     @db.Decimal(30, 10)
-  pnlPercent      Decimal?     @db.Decimal(10, 4)
-  status          OrderStatus  @default(FILLED)
-  tradeMode       TradeMode    @default(PAPER)
-  signalId        String?      @unique
-  signal          Signal?      @relation("SignalTrade", fields: [signalId], references: [id])
-  postMortem      TradePostMortem?
-  executedAt      DateTime     @default(now())
-  createdAt       DateTime     @default(now())
+  symbol            String
+  exchange          String
+  side              OrderSide
+  type              OrderType
+  price             Decimal      @db.Decimal(30, 10)
+  quantity          Decimal      @db.Decimal(30, 10)
+  fee               Decimal      @db.Decimal(30, 10)
+  feeAsset          String
+  pnl               Decimal?     @db.Decimal(30, 10)
+  pnlPercent        Decimal?     @db.Decimal(10, 4)
+  status            OrderStatus  @default(FILLED)
+  tradeMode         TradeMode    @default(PAPER)
+  strategy          String?
+  signalConfidence  Int?
+  timeframe         String?
+  stopLoss          Decimal?     @db.Decimal(30, 10)
+  takeProfit        Decimal?     @db.Decimal(30, 10)
+  executedAt        DateTime     @default(now())
+  createdAt         DateTime     @default(now())
 
   @@index([userId])
   @@index([botId])
@@ -429,40 +236,38 @@ model Trade {
 }
 
 model Order {
-  id                   String       @id @default(cuid())
-  userId               String
-  user                 User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botId                String?
-  bot                  Bot?         @relation(fields: [botId], references: [id], onDelete: SetNull)
-  exchangeAccountId    String
-  exchangeAccount      ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
-  exchangeOrderId      String?
-  clientOrderId        String?
+  id                  String       @id @default(cuid())
+  userId              String
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  botId               String?
+  bot                 Bot?         @relation(fields: [botId], references: [id], onDelete: SetNull)
+  exchangeAccountId   String
+  exchangeAccount     ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
+  exchangeOrderId     String?
+  clientOrderId       String?
   
-  symbol               String
-  baseAsset            String
-  quoteAsset           String
-  side                 OrderSide
-  type                 OrderType
-  price                Decimal      @db.Decimal(30, 10)
-  stopPrice            Decimal?     @db.Decimal(30, 10)
-  amount               Decimal      @db.Decimal(30, 10)
-  filledAmount         Decimal      @db.Decimal(30, 10) @default(0)
-  remainingAmount      Decimal      @db.Decimal(30, 10)
-  value                Decimal      @db.Decimal(30, 10)
-  fee                  Decimal      @db.Decimal(30, 10) @default(0)
-  feeAsset             String?
-  status               OrderStatus  @default(OPEN)
-  tradeMode            TradeMode    @default(PAPER)
-  reduceOnly           Boolean      @default(false)
-  postOnly             Boolean      @default(false)
-  timeInForce          String?      @default("GTC")
+  symbol              String
+  exchange            String
+  side                OrderSide
+  type                OrderType
+  price               Decimal      @db.Decimal(30, 10)
+  stopPrice           Decimal?     @db.Decimal(30, 10)
+  quantity            Decimal      @db.Decimal(30, 10)
+  filledQuantity      Decimal      @db.Decimal(30, 10) @default(0)
+  remainingQuantity   Decimal      @db.Decimal(30, 10)
+  value               Decimal      @db.Decimal(30, 10)
+  fee                 Decimal      @db.Decimal(30, 10) @default(0)
+  feeAsset            String?
+  status              OrderStatus  @default(OPEN)
+  tradeMode           TradeMode    @default(PAPER)
+  reduceOnly          Boolean      @default(false)
+  postOnly            Boolean      @default(false)
+  timeInForce         String?      @default("GTC")
   
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
-  filledAt             DateTime?
-  cancelledAt          DateTime?
-  trades               Trade[]
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+  filledAt            DateTime?
+  cancelledAt         DateTime?
 
   @@index([userId])
   @@index([botId])
@@ -474,38 +279,36 @@ model Order {
 }
 
 model Position {
-  id                   String         @id @default(cuid())
-  userId               String
-  user                 User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botId                String?
-  bot                  Bot?           @relation(fields: [botId], references: [id], onDelete: SetNull)
-  exchangeAccountId    String
-  exchangeAccount      ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
+  id                  String         @id @default(cuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  botId               String?
+  bot                 Bot?           @relation(fields: [botId], references: [id], onDelete: SetNull)
+  exchangeAccountId   String
+  exchangeAccount     ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
   
-  symbol               String
-  baseAsset            String
-  quoteAsset           String
-  side                 PositionSide
-  entryPrice           Decimal        @db.Decimal(30, 10)
-  currentPrice         Decimal        @db.Decimal(30, 10)
-  size                 Decimal        @db.Decimal(30, 10)
-  value                Decimal        @db.Decimal(30, 10)
-  leverage             Int            @default(1)
-  margin               Decimal        @db.Decimal(30, 10)
-  unrealizedPnl        Decimal        @db.Decimal(30, 10) @default(0)
-  realizedPnl          Decimal        @db.Decimal(30, 10) @default(0)
-  pnlPercent           Decimal        @db.Decimal(10, 4) @default(0)
-  stopLoss             Decimal?       @db.Decimal(30, 10)
-  takeProfit           Decimal?       @db.Decimal(30, 10)
-  trailingStop         Decimal?       @db.Decimal(30, 10)
-  liquidationPrice     Decimal?       @db.Decimal(30, 10)
-  status               PositionStatus @default(OPEN)
-  tradeMode            TradeMode      @default(PAPER)
+  symbol              String
+  exchange            String
+  side                PositionSide
+  entryPrice          Decimal        @db.Decimal(30, 10)
+  markPrice           Decimal        @db.Decimal(30, 10)
+  size                Decimal        @db.Decimal(30, 10)
+  value               Decimal        @db.Decimal(30, 10)
+  leverage            Int            @default(1)
+  margin              Decimal        @db.Decimal(30, 10)
+  unrealizedPnl       Decimal        @db.Decimal(30, 10) @default(0)
+  realizedPnl         Decimal        @db.Decimal(30, 10) @default(0)
+  pnlPercent          Decimal        @db.Decimal(10, 4) @default(0)
+  stopLoss            Decimal?       @db.Decimal(30, 10)
+  takeProfit          Decimal?       @db.Decimal(30, 10)
+  trailingStop        Decimal?       @db.Decimal(30, 10)
+  liquidationPrice    Decimal?       @db.Decimal(30, 10)
+  status              PositionStatus @default(OPEN)
+  tradeMode           TradeMode      @default(PAPER)
   
-  openedAt             DateTime       @default(now())
-  closedAt             DateTime?
-  updatedAt            DateTime       @updatedAt
-  trades               Trade[]
+  openedAt            DateTime       @default(now())
+  closedAt            DateTime?
+  updatedAt           DateTime       @updatedAt
 
   @@index([userId])
   @@index([botId])
@@ -515,51 +318,35 @@ model Position {
 }
 
 model Signal {
-  id                   String           @id @default(cuid())
-  botId                String
-  bot                  Bot              @relation(fields: [botId], references: [id], onDelete: Cascade)
-  exchangeAccountId    String
-  exchangeAccount      ExchangeAccount  @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
+  id                  String           @id @default(cuid())
+  botId               String?
+  bot                 Bot?             @relation(fields: [botId], references: [id], onDelete: SetNull)
+  exchangeAccountId   String
+  exchangeAccount     ExchangeAccount  @relation(fields: [exchangeAccountId], references: [id], onDelete: Cascade)
   
-  symbol               String
-  baseAsset            String
-  quoteAsset           String
-  timeframe            Timeframe
-  direction            SignalDirection
-  strength             SignalStrength
-  confidence           Int              @default(0)
+  symbol              String
+  exchange            String
+  timeframe           String
+  direction           SignalDirection
+  strength            SignalStrength
+  confidence          Int
   
-  entryPrice           Decimal          @db.Decimal(30, 10)
-  entryZoneLow         Decimal          @db.Decimal(30, 10)
-  entryZoneHigh        Decimal          @db.Decimal(30, 10)
-  stopLoss             Decimal          @db.Decimal(30, 10)
-  takeProfit1          Decimal          @db.Decimal(30, 10)
-  takeProfit2          Decimal?         @db.Decimal(30, 10)
-  riskReward           Decimal          @db.Decimal(10, 4)
-  invalidationLevel    Decimal?         @db.Decimal(30, 10)
+  entryPrice          Decimal          @db.Decimal(30, 10)
+  stopLoss            Decimal          @db.Decimal(30, 10)
+  takeProfit          Decimal          @db.Decimal(30, 10)
+  takeProfit2         Decimal?         @db.Decimal(30, 10)
+  riskReward          Decimal          @db.Decimal(10, 4)
+  invalidationLevel   Decimal?         @db.Decimal(30, 10)
   
-  trendScore           Int              @default(0)
-  momentumScore        Int              @default(0)
-  volumeScore          Int              @default(0)
-  structureScore       Int              @default(0)
-  futuresScore         Int              @default(0)
-  riskScore            Int              @default(0)
+  indicators          Json
+  reasoning           String[]
+  warnings            String[]
   
-  indicators           Json
-  supportLevels        Json
-  resistanceLevels     Json
-  fundingRate          Decimal?         @db.Decimal(10, 6)
-  openInterest         Decimal?         @db.Decimal(30, 10)
-  volumeAnalysis       Json
-  reasons              Json
-  warnings             Json
+  executed            Boolean          @default(false)
+  executedAt          DateTime?
+  tradeId             String?
   
-  executed             Boolean          @default(false)
-  executedAt           DateTime?
-  tradeId              String?          @unique
-  trade                Trade?           @relation("SignalTrade")
-  postMortems          TradePostMortem[]
-  createdAt            DateTime         @default(now())
+  createdAt           DateTime         @default(now())
 
   @@index([botId])
   @@index([exchangeAccountId])
@@ -569,18 +356,74 @@ model Signal {
   @@index([executed])
 }
 
-model Notification {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type        String
-  title       String
-  message     String
-  data        Json?
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  readAt      DateTime?
+model OrderBookSnapshot {
+  id        String   @id @default(cuid())
+  symbol    String
+  exchange  String
+  bids      Json
+  asks      Json
+  timestamp DateTime   @default(now())
+  
+  @@index([symbol, exchange])
+  @@index([timestamp])
+}
 
+model MarketData {
+  id            String   @id @default(cuid())
+  exchange      String
+  symbol        String
+  timeframe     String
+  open          Decimal  @db.Decimal(30, 10)
+  high          Decimal  @db.Decimal(30, 10)
+  low           Decimal  @db.Decimal(30, 10)
+  close         Decimal  @db.Decimal(30, 10)
+  volume        Decimal  @db.Decimal(30, 10)
+  timestamp     DateTime
+  createdAt     DateTime @default(now())
+  
+  @@unique([exchange, symbol, timeframe, timestamp])
+  @@index([exchange, symbol, timeframe])
+  @@index([timestamp])
+}
+
+model FundingRateHistory {
+  id        String       @id @default(cuid())
+  exchange  String
+  symbol    String
+  rate      Decimal      @db.Decimal(20, 10)
+  timestamp DateTime
+  createdAt DateTime     @default(now())
+  
+  @@unique([exchange, symbol, timestamp])
+  @@index([exchange, symbol])
+  @@index([timestamp])
+}
+
+model OpenInterestHistory {
+  id        String       @id @default(cuid())
+  exchange  String
+  symbol    String
+  value     Decimal      @db.Decimal(30, 10)
+  timestamp DateTime
+  createdAt DateTime     @default(now())
+  
+  @@unique([exchange, symbol, timestamp])
+  @@index([exchange, symbol])
+  @@index([timestamp])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  data      Json?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  readAt    DateTime?
+  
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
@@ -599,468 +442,50 @@ model AuditLog {
   success     Boolean  @default(true)
   errorMessage String?
   createdAt   DateTime @default(now())
-
+  
   @@index([userId])
   @@index([action])
   @@index([resource])
   @@index([createdAt])
 }
 
-model MarketData {
+model BotPerformance {
   id            String   @id @default(cuid())
-  exchange      ExchangeName
-  symbol        String
-  baseAsset     String
-  quoteAsset    String
-  timeframe     Timeframe
-  openPrice     Decimal  @db.Decimal(30, 10)
-  highPrice     Decimal  @db.Decimal(30, 10)
-  lowPrice      Decimal  @db.Decimal(30, 10)
-  closePrice    Decimal  @db.Decimal(30, 10)
-  volume        Decimal  @db.Decimal(30, 10)
-  quoteVolume   Decimal  @db.Decimal(30, 10)
-  tradesCount   Int      @default(0)
-  timestamp     DateTime
-  createdAt     DateTime @default(now())
-
-  @@unique([exchange, symbol, timeframe, timestamp])
-  @@index([exchange, symbol, timeframe])
-  @@index([timestamp])
+  botId         String   @unique
+  bot           Bot      @relation(fields: [botId], references: [id], onDelete: Cascade)
+  totalTrades   Int      @default(0)
+  winningTrades Int      @default(0)
+  losingTrades  Int      @default(0)
+  winRate       Float    @default(0)
+  totalPnl      Float    @default(0)
+  totalPnlPct   Float    @default(0)
+  avgWin        Float    @default(0)
+  avgLoss       Float    @default(0)
+  profitFactor  Float    @default(0)
+  sharpeRatio   Float    @default(0)
+  maxDrawdown   Float    @default(0)
+  maxDrawdownPct Float   @default(0)
+  avgHoldTime   Int      @default(0)
+  bestTrade     Float    @default(0)
+  worstTrade    Float    @default(0)
+  updatedAt     DateTime @updatedAt
 }
 
-model FundingRateHistory {
-  id          String       @id @default(cuid())
-  exchange    ExchangeName
-  symbol      String
-  baseAsset   String
-  quoteAsset  String
-  rate        Decimal      @db.Decimal(10, 6)
-  timestamp   DateTime
-  createdAt   DateTime     @default(now())
-
-  @@unique([exchange, symbol, timestamp])
-  @@index([exchange, symbol])
-  @@index([timestamp])
+model MarketScannerCache {
+  id        String   @id @default(cuid())
+  timeframe   String
+  results   Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  @@unique([timeframe])
+  @@index([expiresAt])
 }
 
-model OpenInterestHistory {
-  id          String       @id @default(cuid())
-  exchange    ExchangeName
-  symbol      String
-  baseAsset   String
-  quoteAsset  String
-  value       Decimal      @db.Decimal(30, 10)
-  timestamp   DateTime
-  createdAt   DateTime     @default(now())
-
-  @@unique([exchange, symbol, timestamp])
-  @@index([exchange, symbol])
-  @@index([timestamp])
-}
-
-model BacktestResult {
-  id                String   @id @default(cuid())
-  userId            String
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  botId             String?
-  bot               Bot?     @relation(fields: [botId], references: [id], onDelete: SetNull)
-  name              String
-  symbol            String
-  timeframe         Timeframe
-  startDate         DateTime
-  endDate           DateTime
-  initialCapital    Decimal  @db.Decimal(30, 10)
-  finalCapital      Decimal  @db.Decimal(30, 10)
-  netPnl            Decimal  @db.Decimal(30, 10)
-  roi               Decimal  @db.Decimal(10, 4)
-  totalTrades       Int
-  winningTrades     Int
-  losingTrades      Int
-  winRate           Decimal  @db.Decimal(10, 4)
-  profitFactor      Decimal  @db.Decimal(10, 4)
-  maxDrawdown       Decimal  @db.Decimal(30, 10)
-  maxDrawdownPercent Decimal @db.Decimal(10, 4)
-  sharpeRatio       Decimal  @db.Decimal(10, 4)
-  avgWin            Decimal  @db.Decimal(30, 10)
-  avgLoss           Decimal  @db.Decimal(30, 10)
-  avgHoldTime       Int
-  config            Json
-  createdAt         DateTime @default(now())
-
-  @@index([userId])
-  @@index([botId])
-  @@index([symbol])
-}
-
-// ============================================================
-// NEWS INTELLIGENCE MODELS
-// ============================================================
-
-model NewsEvent {
-  id                    String           @id @default(cuid())
-  userId                String?
-  sourceId              String
-  sourceType            NewsSourceType
-  sourceName            String
-  sourceUrl             String?
-  title                 String
-  summary               String?
-  content               String?
-  category              NewsCategory
-  sentiment             NewsSentiment
-  impactLevel           NewsImpactLevel
-  impactScore           Int              @default(0)
-  direction             SignalDirection
-  confidence            Int              @default(0)
-  affectedAssets        Json
-  primaryAsset          String?
-  relevanceScores       Json
-  status                NewsEventStatus  @default(BREAKING)
-  publishedAt           DateTime
-  detectedAt            DateTime         @default(now())
-  expiresAt             DateTime?
-  resolvedAt            DateTime?
-  isVerified            Boolean          @default(false)
-  verificationSources   Json
-  marketReaction        Json
-  priceChange1h         Decimal?         @db.Decimal(10, 4)
-  priceChange4h         Decimal?         @db.Decimal(10, 4)
-  priceChange24h        Decimal?         @db.Decimal(10, 4)
-  volumeChange1h        Decimal?         @db.Decimal(10, 4)
-  volumeChange24h       Decimal?         @db.Decimal(10, 4)
-  oiChange1h            Decimal?         @db.Decimal(10, 4)
-  fundingChange         Decimal?         @db.Decimal(10, 6)
-  liquidationData       Json
-  socialMetrics         Json
-  keywords              String[]
-  entities              Json
-  relatedEventIds       String[]
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  assetMappings         NewsAssetMapping[]
-  tradeGates            TradeGate[]
-  timelineEvents        NewsTimelineEvent[]
-  postMortems           TradePostMortem[]
-  socialSignals         SocialSignal[]
-  marketReactions       MarketReactionSnapshot[]
-
-  @@index([userId])
-  @@index([sourceType])
-  @@index([category])
-  @@index([sentiment])
-  @@index([impactLevel])
-  @@index([status])
-  @@index([publishedAt])
-  @@index([primaryAsset])
-  @@index([detectedAt])
-}
-
-model NewsAssetMapping {
-  id              String       @id @default(cuid())
-  newsEventId     String
-  newsEvent       NewsEvent    @relation(fields: [newsEventId], references: [id], onDelete: Cascade)
-  asset           String
-  baseAsset       String
-  quoteAsset      String
-  relevanceScore  Int          @default(0)
-  direction       SignalDirection?
-  sentiment       NewsSentiment?
-  expectedImpact  NewsImpactLevel
-  reasoning       String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
-
-  @@unique([newsEventId, asset])
-  @@index([newsEventId])
-  @@index([asset])
-  @@index([relevanceScore])
-}
-
-model NewsSource {
-  id              String           @id @default(cuid())
-  userId          String?
-  name            String
-  type            NewsSourceType
-  url             String?
-  apiEndpoint     String?
-  credentials     Json?
-  isActive        Boolean          @default(true)
-  reliability     Int              @default(50)
-  weight          Float            @default(1.0)
-  categories      NewsCategory[]
-  assets          String[]
-  keywords        String[]
-  excludedKeywords String[]
-  fetchInterval   Int              @default(300)
-  lastFetchedAt   DateTime?
-  lastError       String?
-  errorCount      Int              @default(0)
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-
-  @@index([userId])
-  @@index([type])
-  @@index([isActive])
-}
-
-model TradeGate {
-  id                  String            @id @default(cuid())
-  userId              String
-  botId               String?
-  signalId            String?
-  newsEventId         String?
-  newsEvent           NewsEvent?       @relation(fields: [newsEventId], references: [id], onDelete: SetNull)
-  symbol              String
-  baseAsset           String
-  quoteAsset          String
-  direction           SignalDirection
-  tradeMode           TradeMode
-  technicalScore      Int               @default(0)
-  technicalStatus     TradeGateCheckStatus @default(SKIPPED)
-  newsScore           Int               @default(0)
-  newsStatus          TradeGateCheckStatus @default(SKIPPED)
-  marketScore         Int               @default(0)
-  marketStatus        TradeGateCheckStatus @default(SKIPPED)
-  liquidityScore      Int               @default(0)
-  liquidityStatus     TradeGateCheckStatus @default(SKIPPED)
-  riskScore           Int               @default(0)
-  riskStatus          TradeGateCheckStatus @default(SKIPPED)
-  socialScore         Int               @default(0)
-  socialStatus        TradeGateCheckStatus @default(SKIPPED)
-  macroScore          Int               @default(0)
-  macroStatus         TradeGateCheckStatus @default(SKIPPED)
-  finalScore          Int               @default(0)
-  decision            TradeGateDecision
-  confidence          Int               @default(0)
-  reasoning           String
-  warnings            Json
-  blockedReasons      Json
-  weights             Json
-  executed            Boolean           @default(false)
-  executedAt          DateTime?
-  tradeId             String?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
-
-  @@index([userId])
-  @@index([botId])
-  @@index([signalId])
-  @@index([newsEventId])
-  @@index([symbol])
-  @@index([decision])
-  @@index([createdAt])
-}
-
-model NewsTimelineEvent {
-  id              String                   @id @default(cuid())
-  userId          String
-  tradeId         String?
-  signalId        String?
-  newsEventId     String?
-  newsEvent       NewsEvent?               @relation(fields: [newsEventId], references: [id], onDelete: SetNull)
-  type            NewsTimelineEventType
-  title           String
-  description     String
-  data            Json
-  impact          Int                      @default(0)
-  timestamp       DateTime                 @default(now())
-  createdAt       DateTime                 @default(now())
-
-  @@index([userId])
-  @@index([tradeId])
-  @@index([signalId])
-  @@index([newsEventId])
-  @@index([type])
-  @@index([timestamp])
-}
-
-model MacroEvent {
-  id                  String          @id @default(cuid())
-  type                MacroEventType
-  title               String
-  description         String?
-  scheduledAt         DateTime
-  actualAt            DateTime?
-  status              String          @default("SCHEDULED")
-  importance          NewsImpactLevel
-  affectedAssets      String[]
-  expectedVolatility  Int             @default(0)
-  previousValue       String?
-  forecastValue       String?
-  actualValue         String?
-  marketReaction      Json
-  source              String
-  sourceUrl           String?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
-
-  @@index([type])
-  @@index([scheduledAt])
-  @@index([status])
-  @@index([importance])
-}
-
-model FollowedPerson {
-  id                  String           @id @default(cuid())
-  userId              String
-  user                User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name                String
-  handle              String
-  type                SocialSourceType
-  profileUrl          String
-  avatarUrl           String?
-  reliability         Int              @default(50)
-  influence           Int              @default(50)
-  assets              String[]
-  categories          NewsCategory[]
-  isVerified          Boolean          @default(false)
-  isActive            Boolean          @default(true)
-  lastPostAt          DateTime?
-  postCount           Int              @default(0)
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  socialSignals       SocialSignal[]
-
-  @@index([userId])
-  @@index([type])
-  @@index([isActive])
-  @@index([reliability])
-}
-
-model SocialSignal {
-  id                  String           @id @default(cuid())
-  userId              String
-  personId            String
-  person              FollowedPerson   @relation(fields: [personId], references: [id], onDelete: Cascade)
-  sourceType          SocialSourceType
-  sourceUrl           String
-  content             String
-  assets              String[]
-  sentiment           NewsSentiment
-  relevance           Int              @default(0)
-  engagement          Json
-  publishedAt         DateTime
-  detectedAt          DateTime         @default(now())
-  processed           Boolean          @default(false)
-  linkedNewsEventId   String?
-  linkedNewsEvent     NewsEvent?       @relation(fields: [linkedNewsEventId], references: [id], onDelete: SetNull)
-  createdAt           DateTime         @default(now())
-
-  @@index([userId])
-  @@index([personId])
-  @@index([sourceType])
-  @@index([publishedAt])
-  @@index([processed])
-  @@index([linkedNewsEventId])
-}
-
-model MarketReactionSnapshot {
-  id                  String       @id @default(cuid())
-  newsEventId         String?
-  newsEvent           NewsEvent?   @relation(fields: [newsEventId], references: [id], onDelete: SetNull)
-  symbol              String
-  baseAsset           String
-  quoteAsset          String
-  price               Decimal      @db.Decimal(30, 10)
-  priceChange1m       Decimal      @db.Decimal(10, 4)
-  priceChange5m       Decimal      @db.Decimal(10, 4)
-  priceChange15m      Decimal      @db.Decimal(10, 4)
-  priceChange1h       Decimal      @db.Decimal(10, 4)
-  priceChange4h       Decimal      @db.Decimal(10, 4)
-  priceChange24h      Decimal      @db.Decimal(10, 4)
-  volume              Decimal      @db.Decimal(30, 10)
-  volumeChange1m      Decimal      @db.Decimal(10, 4)
-  volumeChange5m      Decimal      @db.Decimal(10, 4)
-  volumeChange1h      Decimal      @db.Decimal(10, 4)
-  volumeChange24h     Decimal      @db.Decimal(10, 4)
-  openInterest        Decimal      @db.Decimal(30, 10)
-  oiChange1h          Decimal      @db.Decimal(10, 4)
-  oiChange24h         Decimal      @db.Decimal(10, 4)
-  fundingRate         Decimal      @db.Decimal(10, 6)
-  fundingChange       Decimal      @db.Decimal(10, 6)
-  liquidationsLong    Decimal      @db.Decimal(30, 10)
-  liquidationsShort   Decimal      @db.Decimal(30, 10)
-  bidAskSpread        Decimal      @db.Decimal(10, 6)
-  orderBookImbalance  Decimal      @db.Decimal(10, 4)
-  timestamp           DateTime     @default(now())
-  createdAt           DateTime     @default(now())
-
-  @@index([newsEventId])
-  @@index([symbol])
-  @@index([timestamp])
-}
-
-model TradePostMortem {
-  id                    String       @id @default(cuid())
-  userId                String
-  tradeId               String       @unique
-  trade                 Trade        @relation(fields: [tradeId], references: [id], onDelete: Cascade)
-  signalId              String?
-  signal                Signal?      @relation(fields: [signalId], references: [id], onDelete: SetNull)
-  newsEventId           String?
-  newsEvent             NewsEvent?   @relation(fields: [newsEventId], references: [id], onDelete: SetNull)
-  technicalContribution Int          @default(0)
-  newsContribution      Int          @default(0)
-  marketContribution    Int          @default(0)
-  socialContribution    Int          @default(0)
-  riskEventImpact       Int          @default(0)
-  macroEventImpact      Int          @default(0)
-  finalOutcome          String       @default("UNKNOWN")
-  netPnl                Decimal      @db.Decimal(30, 10)
-  pnlPercent            Decimal      @db.Decimal(10, 4)
-  heldDurationMinutes   Int
-  entryReasoning        String
-  exitReasoning         String
-  lessonsLearned        String
-  newsTimeline          Json
-  marketReactionSummary Json
-  createdAt             DateTime     @default(now())
-
-  @@index([userId])
-  @@index([tradeId])
-  @@index([signalId])
-  @@index([newsEventId])
-  @@index([createdAt])
-}
-
-model NewsReactionHistory {
-  id                  String       @id @default(cuid())
-  category            NewsCategory
-  asset               String
-  baseAsset           String
-  quoteAsset          String
-  sentiment           NewsSentiment
-  impactLevel         NewsImpactLevel
-  avgPriceChange1h    Decimal      @db.Decimal(10, 4)
-  avgPriceChange4h    Decimal      @db.Decimal(10, 4)
-  avgPriceChange24h   Decimal      @db.Decimal(10, 4)
-  avgVolumeChange     Decimal      @db.Decimal(10, 4)
-  avgOIChange         Decimal      @db.Decimal(10, 4)
-  sampleCount         Int          @default(0)
-  winRate             Decimal      @db.Decimal(10, 4)
-  lastUpdated         DateTime     @updatedAt
-  createdAt           DateTime     @default(now())
-
-  @@unique([category, asset, sentiment, impactLevel])
-  @@index([category])
-  @@index([asset])
-  @@index([sentiment])
-  @@index([impactLevel])
-}
-
-model TradeGateWeights {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  technical       Float    @default(0.30)
-  news            Float    @default(0.25)
-  marketStructure Float    @default(0.15)
-  volume          Float    @default(0.10)
-  futures         Float    @default(0.10)
-  social          Float    @default(0.05)
-  risk            Float    @default(0.05)
-  macro           Float    @default(0.05)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+model SystemConfig {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

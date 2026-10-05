@@ -1,16 +1,18 @@
 import crypto from 'crypto';
-import WebSocket from 'ws';
+import type { WebSocket } from 'ws';
 import { BaseExchangeAdapter, type ExchangeCredentials } from './base';
-import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '../types';
+import type { Ticker, Candle, OrderBook, Balance, OrderParams, OrderResult, PositionInfo, FundingRate, OpenInterest, Timeframe } from '@risky-dex/shared';
 import { config } from '../config';
 
 const TIMEFRAME_MAP: Record<Timeframe, string> = {
-  M15: '15m',
-  M30: '30m',
-  H1: '1h',
-  H4: '4h',
-  D1: '1d',
-  W1: '1w',
+  '1m': '15m',
+  '5m': '30m',
+  '15m': '15m',
+  '30m': '30m',
+  '1h': '1h',
+  '4h': '4h',
+  '1d': '1d',
+  '1w': '1w',
 };
 
 export class BingXAdapter extends BaseExchangeAdapter {
@@ -46,7 +48,7 @@ export class BingXAdapter extends BaseExchangeAdapter {
   
   async getServerTime(): Promise<number> {
     const response = await fetch(`${this.baseUrl}/openApi/swap/v2/server/time`);
-    const data = await response.json() as { data: string };
+    const data = await response.json();
     return parseInt(data.data);
   }
   

@@ -1,4 +1,4 @@
-import { prisma } from '@utils/prisma';
+import { PrismaClient } from '@prisma/client';
 import { createExchangeAdapter, type BaseExchangeAdapter } from '@adapters/index';
 import { signalEngine } from './signalEngine';
 import { riskEngine } from './riskEngine';
@@ -15,8 +15,8 @@ import type {
   OrderSide,
   OrderType,
   PositionSide,
-} from '../types';
-import { encrypt, decrypt } from '@utils/encryption';
+} from '@risky-dex/shared';
+import { encrypt, decrypt } from '../utils/encryption';
 
 export class TradingService {
   private adapters: Map<string, BaseExchangeAdapter> = new Map();
@@ -338,21 +338,6 @@ export class TradingService {
     }
   }
   
-  private async getDailyPnl(userId: string): Promise<number> {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    const trades = await prisma.trade.findMany({
-      where: {
-        userId,
-        executedAt: { gte: today },
-        tradeMode: 'LIVE',
-      },
-    });
-    
-    return trades.reduce((sum, t) => sum + Number(t.pnl || 0), 0);
-  }
-  
   async createPaperTrade(params: {
     userId: string;
     exchangeAccountId: string;
@@ -392,6 +377,21 @@ export class TradingService {
     });
     
     return trade;
+  }
+  
+  private async getDailyPnl(userId: string): Promise<number> {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const trades = await prisma.trade.findMany({
+      where: {
+        userId,
+        executedAt: { gte: today },
+        tradeMode: 'LIVE',
+      },
+    });
+    
+    return trades.reduce((sum, t) => sum + Number(t.pnl || 0), 0);
   }
 }
 

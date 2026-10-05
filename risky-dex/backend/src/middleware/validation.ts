@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema, ZodError } from 'zod';
 
-export function validateBody<T>(schema: ZodSchema<T>) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+export const validateBody = <T>(schema: ZodSchema<T>) => {
+  return (req: Request, res: Response, next: Function): void => {
     try {
       req.body = schema.parse(req.body);
       next();
@@ -21,13 +21,12 @@ export function validateBody<T>(schema: ZodSchema<T>) {
       next(error);
     }
   };
-}
+};
 
-export function validateQuery<T extends Record<string, unknown>>(schema: ZodSchema<T>) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+export const validateQuery = <T>(schema: ZodSchema<T>) => {
+  return (req: Request, res: Response, next: Function): void => {
     try {
-      const parsed = schema.parse(req.query);
-      req.query = parsed as unknown as Request['query'];
+      req.query = schema.parse(req.query);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -44,13 +43,12 @@ export function validateQuery<T extends Record<string, unknown>>(schema: ZodSche
       next(error);
     }
   };
-}
+};
 
-export function validateParams<T extends Record<string, unknown>>(schema: ZodSchema<T>) {
-  return (req: Request, res: Response, next: NextFunction): void => {
+export const validateParams = <T>(schema: ZodSchema<T>) => {
+  return (req: Request, res: Response, next: Function): void => {
     try {
-      const parsed = schema.parse(req.params);
-      req.params = parsed as unknown as Request['params'];
+      req.params = schema.parse(req.params);
       next();
     } catch (error) {
       if (error instanceof ZodError) {
@@ -67,4 +65,4 @@ export function validateParams<T extends Record<string, unknown>>(schema: ZodSch
       next(error);
     }
   };
-}
+};
