@@ -8,15 +8,15 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "https://risky-dex-backend.up.railway.app/api/$1"
+      "destination": "https://risky-dex-backend.fly.dev/api/$1"
     },
     {
       "source": "/ws/(.*)",
-      "destination": "wss://risky-dex-backend.up.railway.app/ws/$1"
+      "destination": "wss://risky-dex-backend.fly.dev/ws/$1"
     }
   ],
   "env": {
-    "VITE_API_URL": "https://risky-dex-backend.up.railway.app",
-    "VITE_WS_URL": "wss://risky-dex-backend.up.railway.app"
+    "VITE_API_URL": "https://risky-dex-backend.fly.dev",
+    "VITE_WS_URL": "wss://risky-dex-backend.fly.dev"
   }
 }
