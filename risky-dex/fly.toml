@@ -1,11 +1,9 @@
-# Fly.io Configuration for RISKY-DEX Backend
-# Run: flyctl launch --config fly.toml
-
 app = "risky-dex-backend"
-primary_region = "iad"  # US East (change to your region: lhr, sin, syd, etc.)
+primary_region = "iad"
 
 [build]
   dockerfile = "Dockerfile"
+  context = "."
 
 [env]
   NODE_ENV = "production"
@@ -19,24 +17,16 @@ primary_region = "iad"  # US East (change to your region: lhr, sin, syd, etc.)
   min_machines_running = 1
   processes = ["app"]
 
-  # Health checks
   [[http_service.checks]]
     interval = "10s"
     timeout = "5s"
     method = "GET"
     path = "/api/health"
 
-# Release command - runs migrations before deploy
-[deploy]
-  release_command = "npm run prisma:migrate:deploy"
+# [deploy]
+#   release_command = "npm run prisma:migrate:deploy"
 
-# VM sizing (free tier: shared-cpu-1x, 256MB)
 [[vm]]
   size = "shared-cpu-1x"
   cpus = 1
   memory_mb = 256
-
-# Mount for any persistent data (optional)
-# [[mounts]]
-#   source = "risky_dex_data"
-#   destination = "/data"

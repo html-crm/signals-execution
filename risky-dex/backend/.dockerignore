@@ -37,7 +37,7 @@ coverage
 .gitignore
 
 # Prisma
-prisma/migrations/
+# prisma/migrations/
 
 # Docker
 Dockerfile

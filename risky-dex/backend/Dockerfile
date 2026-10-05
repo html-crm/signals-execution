@@ -8,7 +8,10 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
-COPY prisma ./prisma/
+
+# Create prisma directory and copy schema
+RUN mkdir -p prisma
+COPY prisma/schema.prisma ./prisma/
 
 # Install dependencies
 RUN npm ci
@@ -38,7 +41,7 @@ RUN addgroup -g 1001 -S nodejs && \
 COPY --from=builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=builder --chown=nodejs:nodejs /app/package.json ./
-COPY --from=builder --chown=nodejs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nodejs:nodejs /app/prisma/schema.prisma ./prisma/
 
 # Switch to non-root user
 USER nodejs
