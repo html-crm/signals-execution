@@ -5,7 +5,7 @@ import { Panel } from '../ui';
 import { Button } from '../ui/Button';
 import { useAppStore } from '../../store/appStore';
 import { formatCurrency, formatNumber, formatPercent, formatTimestamp } from '../../utils/helpers';
-import { TrendingUp, TrendingDown, Activity, Zap, Droplet, Pulse, ChevronDown } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Zap, Droplet, Gauge, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useState, useMemo } from 'react';
 
@@ -95,7 +95,7 @@ export function MarketActivityPanel() {
                 value={market.spreadPercent}
                 suffix="%"
                 compact={true}
-                icon={Pulse}
+                icon={Gauge}
               />
             </div>
 

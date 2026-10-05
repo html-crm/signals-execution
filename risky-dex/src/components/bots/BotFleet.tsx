@@ -138,7 +138,7 @@ function BotFleetCard({ bot, compact }: BotFleetCardProps) {
               <Pause className="w-4 h-4" />
             </Button>
           )}
-          {status !== 'STOPPED' && status !== 'STARTING' && (
+          {status !== 'STOPPED' && (
             <Button variant="ghost" size="icon" onClick={() => wsService.stopBot(bot.id)} title="Stop">
               <Square className="w-4 h-4" />
             </Button>

@@ -16,7 +16,6 @@ import {
   Area,
   ReferenceLine,
   type TooltipPayload,
-  type TooltipPayloadEntry,
 } from 'recharts';
 import { useAppStore } from '../../store/appStore';
 import { formatCurrency, formatPercent } from '../../utils/helpers';
@@ -38,6 +37,13 @@ interface TradeMarker {
   pnl?: number;
 }
 
+interface ExtendedPortfolio {
+  totalEquity: number;
+  startingCapital?: number;
+  maxDrawdown?: number;
+  sharpeRatio?: number;
+}
+
 export function EquityChart() {
   const { portfolio, chartTimeframe, setChartTimeframe, bots } = useAppStore();
   const [equityData, setEquityData] = useState<EquityDataPoint[]>([]);
@@ -45,7 +51,7 @@ export function EquityChart() {
 
   useEffect(() => {
     generateEquityData();
-  }, [chartTimeframe, portfolio?.totalEquity, portfolio?.startingCapital]);
+  }, [chartTimeframe, portfolio?.totalEquity]);
 
   const generateEquityData = () => {
     const now = Date.now();
@@ -75,8 +81,9 @@ export function EquityChart() {
         break;
     }
 
-    const startEquity = portfolio?.startingCapital || 10000;
-    const currentEquity = portfolio?.totalEquity || 12482;
+    const portfolioData = portfolio as ExtendedPortfolio | null;
+    const startEquity = portfolioData?.startingCapital ?? 10000;
+    const currentEquity = portfolioData?.totalEquity ?? 12482;
     const totalChange = currentEquity - startEquity;
 
     const data: EquityDataPoint[] = [];
@@ -124,12 +131,29 @@ export function EquityChart() {
     setTradeMarkers(markers);
   };
 
-  const startEquity = portfolio?.startingCapital || 10000;
-  const currentEquity = portfolio?.totalEquity || 12482;
+  const portfolioData = portfolio as ExtendedPortfolio | null;
+  const startEquity = portfolioData?.startingCapital ?? 10000;
+  const currentEquity = portfolioData?.totalEquity ?? 12482;
   const totalPnl = currentEquity - startEquity;
-  const pnlPercent = (totalPnl / startEquity) * 100;
+  const pnlPercent = startEquity !== 0 ? (totalPnl / startEquity) * 100 : 0;
 
   const isPositive = totalPnl >= 0;
+
+  const CustomTooltip = ({ active, payload, label }: { active?: boolean; payload?: { value: number; name: string; color: string }[]; label?: string }) => {
+    if (active && payload && payload.length > 0) {
+      return (
+        <div className="bg-[#111820] border border-[#1e293b] rounded-lg p-3">
+          <p className="text-xs text-[#64748b] mb-1">{label}</p>
+          {payload.map((entry, index) => (
+            <p key={index} className="text-sm font-mono" style={{ color: entry.color }}>
+              {entry.name}: {entry.value !== undefined ? `$${entry.value.toLocaleString()}` : '—'}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <Panel variant="default" padding="none" className="h-full flex flex-col">
@@ -177,18 +201,9 @@ export function EquityChart() {
               tickFormatter={(value) => formatCurrency(value, 0)}
               width={60}
             />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: '#111820',
-                border: '1px solid #1e293b',
-                borderRadius: '8px',
-                color: '#f1f5f9',
-              }}
-              formatter={(value: number | undefined, name: string) => [value ? formatCurrency(value) : '—', name]}
-              labelFormatter={(time: string) => time}
-            />
+            <Tooltip content={<CustomTooltip />} />
             <ReferenceLine
-              y={startEquity}
+              y={10000}
               stroke="rgba(148, 163, 184, 0.3)"
               strokeDasharray="4 4"
               label={{ value: 'Start', position: 'left', fill: '#64748b', fontSize: 10 }}
@@ -231,9 +246,7 @@ export function EquityChart() {
                     fontSize: 9,
                     fontFamily: 'JetBrains Mono, monospace',
                     fontWeight: 600,
-                    backgroundColor: 'rgba(17, 24, 32, 0.9)',
-                    padding: '2px 4px',
-                    borderRadius: '3px',
+                    stroke: 'none',
                   }}
                 />
               </motion.div>

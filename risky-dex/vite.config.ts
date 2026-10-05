@@ -25,4 +25,16 @@ export default defineConfig({
       port: 5173,
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['react-is'],
+    },
+  },
+  css: {
+    lightningcss: {
+      drafts: {
+        customMedia: true,
+      },
+    },
+  },
 })
